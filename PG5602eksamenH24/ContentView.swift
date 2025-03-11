@@ -9,53 +9,80 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @EnvironmentObject var settingsViewModel: SettingsViewModel
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    
+    @State private var showTicker: Bool = true
+    @State private var tickerPosition: String = "Top"
+    @State private var selectedArticle: Article?
+    @State private var headlineFontSize: CGFloat = 16
+    @State private var headlineFontColor: Color = Color.black
+    
+    private var viewModel: ArticlesViewModel
+    private var categoryViewModel: CategoryViewModel
+    private var articleRepository: ArticleRepository
+    private var categoryRepository: CategoryRepository
+    private var countryRepository: CountryRepository
+    private var newsTickerViewModel: NewsTickerViewModel
+    private var searchRepository: SearchRepository
+    private var searchViewModel: SearchViewModel
+    private var notesViewModel: NotesViewModel
+    
+    init(viewModel: ArticlesViewModel, categoryViewModel: CategoryViewModel, articleRepository: ArticleRepository, categoryRepository: CategoryRepository, newsTickerViewModel: NewsTickerViewModel, countryRepository: CountryRepository, searchRepository: SearchRepository, searchViewModel: SearchViewModel, notesViewModel: NotesViewModel) {
+        self.viewModel = viewModel
+        self.categoryViewModel = categoryViewModel
+        self.articleRepository = articleRepository
+        self.categoryRepository = categoryRepository
+        self.countryRepository = countryRepository
+        self.newsTickerViewModel = newsTickerViewModel
+        self.searchRepository = searchRepository
+        self.searchViewModel = searchViewModel
+        self.notesViewModel = notesViewModel
+    }
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        NavigationStack {
+            TabView {
+                HomeView(
+                    settingsViewModel: settingsViewModel,
+                    viewModel: viewModel,
+                    newsTickerViewModel: newsTickerViewModel,
+                    selectedArticle: $selectedArticle,
+                    categoryRepository: categoryRepository,
+                    countryRepository: countryRepository
+                )
+                .tabItem {
+                    Label("Articles", systemImage: "doc.plaintext.fill")
                 }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
+                SearchView(
+                    viewModel: viewModel,
+                    settingsViewModel: settingsViewModel,
+                    searchRepository: searchRepository,
+                    categoryRepository: categoryRepository)
+                .tabItem {
+                    Label("Search", systemImage: "magnifyingglass")
                 }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+                SettingsView(
+                    headlineFontSize: $headlineFontSize,
+                    headlineFontColor: $headlineFontColor,
+                    viewModel: viewModel,
+                    categoryViewModel: categoryViewModel,
+                    settingsViewModel: settingsViewModel,
+                    newsTickerViewModel: newsTickerViewModel,
+                    searchViewModel: searchViewModel,
+                    notesViewModel: notesViewModel,
+                    categoryRepository: categoryRepository
+                )
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
                 }
-            }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
             }
         }
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
-}
+
+//#Preview {
+//    //    ContentView()
+//    //        .modelContainer(for: Item.self, inMemory: true)
+//}
